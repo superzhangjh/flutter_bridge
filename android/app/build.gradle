@@ -3,6 +3,7 @@ plugins {
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
+    id "kotlin-kapt"
 }
 
 def localProperties = new Properties()
@@ -55,4 +56,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation project(':flutter_bridge_core')
+    implementation project(':flutter_bridge_android')
+    kapt project(':flutter_bridge_processor')
 }

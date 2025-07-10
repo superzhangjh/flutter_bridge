@@ -5,12 +5,8 @@ import com.galaxy.flutter.bridge.core.model.ThreadMode
 import com.galaxy.flutter.bridge.core.registry.IFlutterBridgeRegistry
 import com.galaxy.flutter.bridge.core.service.FlutterBridgeService
 import com.galaxy.flutter.bridge.core.service.FlutterBridgeServiceManager
-import com.galaxy.flutter.bridge.model.ChannelMessage
-import com.galaxy.flutter.bridge.model.ChannelMessageCodec
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BasicMessageChannel
-import io.flutter.plugin.common.JSONMessageCodec
-import io.flutter.plugin.common.JSONUtil
 import io.flutter.plugin.common.StringCodec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,9 +49,9 @@ object FlutterBridgeManager {
                 val methodName = json.getString("methodName")
 
                 CoroutineScope(service.resolveContext(methodName)).launch {
-                    val argsArray = if (json.get("args") is JSONArray) {
+                    val argsArray = if (json["args"] is JSONArray) {
                         val args = json.getJSONArray("args")
-                        Array<Any?>(args.length()) { args.get(it) }
+                        Array<Any?>(args.length()) { args[it] }
                     } else {
                         null
                     }
@@ -78,5 +74,9 @@ object FlutterBridgeManager {
             ThreadMode.IO -> Dispatchers.IO
             ThreadMode.DEFAULT -> Dispatchers.Default
         }
+    }
+
+    fun setChannelFactory() {
+        //todo: 渠道通信方案，可以自行决定使用哪种方式实现, 但是会提供默认的实现方式( BasicMessageChannel的方式 )
     }
 }

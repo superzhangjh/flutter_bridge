@@ -1,7 +1,29 @@
+import java.nio.file.Paths
+import java.util.Properties
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-//    id("dev.flutter.flutter-gradle-plugin")
+}
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.reader(Charsets.UTF_8).use { reader ->
+            load(reader)
+        }
+    }
+}
+val flutterRoot: String = localProperties.getProperty("flutter.sdk")
+val engineVersion = Paths.get(flutterRoot, "bin", "internal", "engine.version")
+    .toFile().readText().trim()
+
+val storageUrl = System.getenv("FLUTTER_STORAGE_BASE_URL") ?: "https://storage.googleapis.com"
+
+var engineRealm = Paths.get(flutterRoot, "bin", "internal", "engine.realm")
+    .toFile().readText().trim()
+if (engineRealm.isNotEmpty()) {
+    engineRealm = "$engineRealm/"
 }
 
 android {
@@ -32,11 +54,15 @@ android {
     }
 }
 
-//flutter {
-//    source = "../.."
-//}
+repositories {
+    maven {
+        url = uri("$storageUrl/${engineRealm}download.flutter.io")
+    }
+}
 
 dependencies {
+    // flutter_embedding.jar，参考 flutter sdk 'resolve_dependencies.gradle'
+    compileOnly("io.flutter:flutter_embedding_debug:1.0.0-$engineVersion")
 
     implementation(project(":flutter_bridge_core"))
 
@@ -44,8 +70,4 @@ dependencies {
 //    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
 //    implementation("androidx.appcompat:appcompat:1.7.1")
 //    implementation("com.google.android.material:material:1.12.0")
-//    testImplementation("junit:junit:4.13.2")
-//    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-//    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-//    compileOnly(project(":flutter"))
 }
