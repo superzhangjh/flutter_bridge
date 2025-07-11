@@ -27,7 +27,7 @@ if (engineRealm.isNotEmpty()) {
 }
 
 android {
-    namespace = "com.galaxy.flutter.bridge"
+    namespace = "com.zjh.flutter.bridge"
     compileSdk = 34
 
     defaultConfig {
@@ -61,11 +61,9 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":flutter_bridge_core"))
     // flutter_embedding.jar，参考 flutter sdk 'resolve_dependencies.gradle'
     compileOnly("io.flutter:flutter_embedding_debug:1.0.0-$engineVersion")
-
-    implementation(project(":flutter_bridge_core"))
-
 //    implementation("androidx.core:core-ktx:1.16.0")
 //    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
 //    implementation("androidx.appcompat:appcompat:1.7.1")

@@ -1,12 +1,18 @@
 package com.example.flutter_bridge_demo.bridge
 
 import android.util.Log
-import com.galaxy.flutter.bridge.core.annotation.FlutterBridge
-import com.galaxy.flutter.bridge.core.annotation.NativeMethod
-import com.galaxy.flutter.bridge.core.model.ThreadMode
+import com.zjh.flutter.bridge.FlutterBridgeManager
+import com.zjh.flutter.bridge.core.annotation.FlutterBridge
+import com.zjh.flutter.bridge.core.annotation.FlutterMethod
+import com.zjh.flutter.bridge.core.annotation.NativeMethod
+import com.zjh.flutter.bridge.core.model.ThreadMode
 
 @FlutterBridge
 abstract class MyFlutterBridge {
+
+    init {
+        FlutterBridgeManager.getDelegate<MyFlutterBridgeDelegate>().callFlutter("aaa", 11)
+    }
 
     @NativeMethod
     fun getVersion(board: String, flag: Int): Int {
@@ -18,4 +24,13 @@ abstract class MyFlutterBridge {
     fun testVoid() {
         Log.d("调试插件", "native >> testVoid >> thread:${Thread.currentThread().name}")
     }
+
+    @FlutterMethod
+    abstract fun callFlutter(arg1: String, arg2: Int)
+
+    /**
+     * Result只能是Async的
+     */
+    @FlutterMethod
+    abstract fun callFlutterWithResult()
 }

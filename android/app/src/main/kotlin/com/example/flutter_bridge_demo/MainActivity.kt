@@ -1,6 +1,6 @@
 package com.example.flutter_bridge_demo
 
-import com.galaxy.flutter.bridge.FlutterBridgeManager
+import com.zjh.flutter.bridge.FlutterBridgeManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 
