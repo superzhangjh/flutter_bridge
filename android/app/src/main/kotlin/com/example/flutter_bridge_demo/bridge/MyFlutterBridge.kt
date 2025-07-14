@@ -10,10 +10,6 @@ import com.zjh.flutter.bridge.core.model.ThreadMode
 @FlutterBridge
 abstract class MyFlutterBridge {
 
-    init {
-        FlutterBridgeManager.getDelegate<MyFlutterBridgeDelegate>().callFlutter("aaa", 11)
-    }
-
     @NativeMethod
     fun getVersion(board: String, flag: Int): Int {
         Log.d("调试插件", "native >> getVersion >> thread:${Thread.currentThread().name} board:$board, flag:$flag")

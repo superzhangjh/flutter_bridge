@@ -1,21 +1,22 @@
-//import com.galaxy.flutter.bridge.core.IFlutterBridgeScheduler
-//
-//object FlutterBridgeSchedulers  {
-//
-//    private var scheduler: IFlutterBridgeScheduler? = null
-//
-//    /**
-//     * 设置线程调度器，需要在 flutter-bridge-android 中实现 Android 主线程调度
-//     */
-//    @Synchronized
-//    fun set(scheduler: IFlutterBridgeScheduler) {
-//        FlutterBridgeSchedulers.scheduler = scheduler
-//    }
-//
-//    @JvmStatic
-//    fun get(): IFlutterBridgeScheduler {
-//        assert(scheduler != null) { "Please call the set method first" }
-//        return scheduler!!
-//    }
-//
-//}
+package com.zjh.flutter.bridge
+
+import com.zjh.flutter.bridge.core.model.ThreadMode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlin.coroutines.CoroutineContext
+
+object FlutterBridgeSchedulers {
+
+    val scope by lazy { CoroutineScope(SupervisorJob()) }
+
+}
+
+fun ThreadMode.toDispatchers(): CoroutineContext {
+    return when (this) {
+        ThreadMode.Unconfined -> Dispatchers.Unconfined
+        ThreadMode.Main -> Dispatchers.Main
+        ThreadMode.IO -> Dispatchers.IO
+        ThreadMode.DEFAULT -> Dispatchers.Default
+    }
+}

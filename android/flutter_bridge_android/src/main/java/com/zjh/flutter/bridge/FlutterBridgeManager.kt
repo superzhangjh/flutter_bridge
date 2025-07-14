@@ -1,16 +1,16 @@
 package com.zjh.flutter.bridge
 
 import android.util.Log
-import com.zjh.flutter.bridge.core.delegate.FlutterBridgeDelegate
+import com.zjh.flutter.bridge.core.base.FlutterBridgeDelegate
+import com.zjh.flutter.bridge.core.base.FlutterBridgeInvoker
+import com.zjh.flutter.bridge.core.cache.FlutterBridgeCache
 import com.zjh.flutter.bridge.core.model.ThreadMode
 import com.zjh.flutter.bridge.core.registry.IFlutterBridgeRegistry
-import com.zjh.flutter.bridge.core.service.FlutterBridgeService
-import com.zjh.flutter.bridge.core.service.FlutterBridgeServiceManager
+import com.zjh.flutter.bridge.core.cache.FlutterBridgeCacheManager
+import com.zjh.flutter.bridge.manage.FlutterChannelManager
+import com.zjh.flutter.bridge.model.ChannelMessage
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BasicMessageChannel
-import io.flutter.plugin.common.StringCodec
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -18,17 +18,21 @@ import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.util.ServiceLoader
-import kotlin.coroutines.CoroutineContext
 
 object FlutterBridgeManager {
 
+    private lateinit var channelManager: FlutterChannelManager
+
     /**
      * 注册使用了@FlutterBridge的插件
+     * //todo: engine可以提供接口通过外部获取，兼容多engine的情况
      */
     @JvmStatic
     fun init(engine: FlutterEngine) {
+        channelManager = FlutterChannelManager(engine)
+
         registerServices()
-        bindServices(engine)
+        bindServices()
     }
 
     private fun registerServices() {
@@ -38,56 +42,36 @@ object FlutterBridgeManager {
         }
     }
 
-    private fun bindServices(engine: FlutterEngine) {
-        for (service in FlutterBridgeServiceManager.allServices()) {
-            val channel = BasicMessageChannel(
-                engine.dartExecutor.binaryMessenger,
-                service.channelName(),
-                StringCodec.INSTANCE
-            )
-            channel.setMessageHandler { message, reply ->
-                Log.d("调试插件", "channel:${service.channelName()} message:$message")
-                if (message == null) return@setMessageHandler
-                Log.d("调试插件", "channel replace:${service.channelName()} message:${message.replaceFirst("/", "")}")
-                val json = JSONObject(message)
-                val methodName = json.getString("methodName")
+    private fun bindServices() {
+        for (entry in FlutterBridgeCacheManager.allDelegates()) {
+            channelManager.of(entry.key).setMessageHandler { message, reply ->
+                val delegate = entry.value
 
-                CoroutineScope(service.resolveContext(methodName)).launch {
-                    val argsArray = if (json["args"] is JSONArray) {
-                        val args = json.getJSONArray("args")
-                        Array<Any?>(args.length()) { args[it] }
-                    } else {
-                        null
-                    }
-                    val result = service.onCallNativeMethod(methodName, argsArray)
+                val messageName = message?.methodName
+                if (messageName.isNullOrEmpty()) return@setMessageHandler
 
-                    val responseJson = JSONObject()
-                    responseJson.put("methodName", methodName)
-                    responseJson.put("result", if (result == Void.TYPE) null else result)
-                    reply.reply(responseJson.toString())
+                // 调用方法的线程
+                val threadMode = delegate.methodThreadModeMap[messageName] ?: ThreadMode.Unconfined
+
+                // 在指定的线程执行任务
+                FlutterBridgeSchedulers.scope.launch(threadMode.toDispatchers()) {
+                    val result = delegate.instance.onCallNativeMethod(messageName, message.args)
+                    //todo：检查允许的参数类型
+                    reply.reply(ChannelMessage.response(result))
                 }
             }
-
-            tempchannel = channel
-
         }
     }
 
-    // todo: 临时写法，需要建立Delegate、Proxy之间的关系
-    lateinit var tempchannel: BasicMessageChannel<String>
-
-    inline fun <reified T : FlutterBridgeDelegate> getDelegate() : T {
+    /**
+     * 获取Invoker，调用Flutter方法
+     */
+    inline fun <reified T : FlutterBridgeInvoker> getInvoker() : T {
+        val proxy = FlutterBridgeInvokerProxy.getProxy(T::class.java)
+        FlutterBridgeCacheManager.getInvokerInfo(T::class.java)
+        //todo: 缓存代理类
         val proxy = Proxy.newProxyInstance(T::class.java.classLoader, arrayOf(T::class.java), FlutterBridgeDelegateProxy(tempchannel))
         return proxy as T
-    }
-
-    private fun FlutterBridgeService.resolveContext(methodName: String): CoroutineContext {
-        return when (resolveThreadMode(methodName)) {
-            ThreadMode.Unconfined -> Dispatchers.Unconfined
-            ThreadMode.Main -> Dispatchers.Main
-            ThreadMode.IO -> Dispatchers.IO
-            ThreadMode.DEFAULT -> Dispatchers.Default
-        }
     }
 
     fun setChannelFactory() {
@@ -99,6 +83,7 @@ object FlutterBridgeManager {
         //todo: 这里应该是能通过channel来获取到对应的配置信息, 然后再通过方法名去调用
         override fun invoke(proxy: Any, method: Method, args: Array<out Any>?): Any {
             val methodName = method.name
+            Log.d("调试插件", "call flutter >> methodName:$methodName args:${args?.joinToString { it.toString() }}")
 
             val jsonObject = JSONObject()
             jsonObject.put("methodName", methodName)

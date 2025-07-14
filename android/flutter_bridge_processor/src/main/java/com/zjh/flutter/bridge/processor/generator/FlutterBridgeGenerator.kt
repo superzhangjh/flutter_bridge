@@ -1,6 +1,5 @@
 package com.zjh.flutter.bridge.processor.generator
 
-import com.squareup.javapoet.AnnotationSpec
 import com.zjh.flutter.bridge.processor.model.BridgeModel
 import com.squareup.javapoet.ClassName
 import com.squareup.javapoet.FieldSpec
@@ -9,11 +8,11 @@ import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.ParameterSpec
 import com.squareup.javapoet.TypeName
 import com.squareup.javapoet.TypeSpec
-import com.zjh.flutter.bridge.core.delegate.FlutterBridgeDelegate
+import com.zjh.flutter.bridge.core.base.FlutterBridgeDelegate
 import com.zjh.flutter.bridge.core.model.ThreadMode
 import com.zjh.flutter.bridge.core.registry.IFlutterBridgeRegistry
-import com.zjh.flutter.bridge.core.service.FlutterBridgeService
-import com.zjh.flutter.bridge.core.service.FlutterBridgeServiceManager
+import com.zjh.flutter.bridge.core.cache.FlutterBridgeService
+import com.zjh.flutter.bridge.core.cache.FlutterBridgeCacheManager
 import java.io.IOException
 import java.util.stream.Collectors
 import java.util.stream.IntStream
@@ -106,7 +105,7 @@ internal object FlutterBridgeGenerator {
                     )
                     .addStatement(
                         "\$T.addService(new \$L(delegate))",
-                        ClassName.get(FlutterBridgeServiceManager::class.java),
+                        ClassName.get(FlutterBridgeCacheManager::class.java),
                         serviceImpl.name
                     )
                     .build()
